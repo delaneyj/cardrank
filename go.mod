@@ -1,3 +1,3 @@
-module github.com/cardrank/cardrank
+module github.com/delanyj/cardrank
 
 go 1.22
