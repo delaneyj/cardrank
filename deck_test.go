@@ -52,7 +52,7 @@ func testDeckNew(t *testing.T, exp int, typ DeckType, r string) {
 				if !slices.Contains(v, c) {
 					t.Errorf("v does not contain %s", c)
 				}
-				if !slices.Contains(d.v, c) {
+				if !slices.Contains(d.V, c) {
 					t.Errorf("d.v does not contain %s", c)
 				}
 			}
@@ -62,23 +62,23 @@ func testDeckNew(t *testing.T, exp int, typ DeckType, r string) {
 	rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
 	d1.Shuffle(rnd, 1)
 	d2.Shuffle(rnd, 1)
-	if slices.Equal(d1.v, v) {
+	if slices.Equal(d1.V, v) {
 		t.Fatalf("expected d1.v != v")
 	}
-	if slices.Equal(d2.v, v) {
+	if slices.Equal(d2.V, v) {
 		t.Fatalf("expected d2.v != v")
 	}
-	if n, exp := len(d1.v), exp; n != exp {
+	if n, exp := len(d1.V), exp; n != exp {
 		t.Fatalf("expected len(d1.v) == %d, got: %d", exp, n)
 	}
-	if n, exp := len(d2.v), exp; n != exp {
+	if n, exp := len(d2.V), exp; n != exp {
 		t.Fatalf("expected len(d2.v) == %d, got: %d", exp, n)
 	}
 	for i := range exp {
-		if !slices.Contains(d1.v, v[i]) {
+		if !slices.Contains(d1.V, v[i]) {
 			t.Errorf("d1.v does not contain %s", v[i])
 		}
-		if !slices.Contains(d2.v, v[i]) {
+		if !slices.Contains(d2.V, v[i]) {
 			t.Errorf("d2.v does not contain %s", v[i])
 		}
 	}
@@ -128,11 +128,11 @@ func testDeckShoe(t *testing.T, exp int, typ DeckType) {
 	const count = 7
 	d := typ.Shoe(count)
 	d.Shuffle(rand.New(rand.NewSource(time.Now().UnixNano())), 1)
-	if n, exp := len(d.v), count*exp; n != exp {
+	if n, exp := len(d.V), count*exp; n != exp {
 		t.Fatalf("expected len(d.v) == %d, got: %d", exp, n)
 	}
 	m := make(map[Card]int, exp)
-	for _, c := range d.v {
+	for _, c := range d.V {
 		m[c]++
 	}
 	if n, exp := len(m), exp; n != exp {

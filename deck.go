@@ -167,11 +167,11 @@ func (typ DeckType) Shoe(count int) *Deck {
 	v := typ.v()
 	n := len(v)
 	d := &Deck{
-		v: make([]Card, n*count),
-		l: count * n,
+		V: make([]Card, n*count),
+		L: count * n,
 	}
 	for i := range count {
-		copy(d.v[i*n:], v)
+		copy(d.V[i*n:], v)
 	}
 	return d
 }
@@ -195,16 +195,16 @@ func (typ DeckType) Exclude(ex ...[]Card) []Card {
 
 // Deck is a set of playing cards.
 type Deck struct {
-	i int
-	l int
-	v []Card
+	I int    `json:"index"`
+	L int    `json:"length"`
+	V []Card `json:"cards"`
 }
 
 // DeckOf creates a deck for the provided cards.
 func DeckOf(cards ...Card) *Deck {
 	return &Deck{
-		v: cards,
-		l: len(cards),
+		V: cards,
+		L: len(cards),
 	}
 }
 
@@ -221,17 +221,17 @@ func NewShoe(count int) *Deck {
 // Limit limits the cards for the deck, for use with card shoes composed of
 // more than one deck of cards.
 func (d *Deck) Limit(limit int) {
-	d.l = limit
+	d.L = limit
 }
 
 // Empty returns true when there are no cards remaining in the deck.
 func (d *Deck) Empty() bool {
-	return d.l <= d.i
+	return d.L <= d.I
 }
 
 // Remaining returns the number of remaining cards in the deck.
 func (d *Deck) Remaining() int {
-	if n := d.l - d.i; 0 <= n {
+	if n := d.L - d.I; 0 <= n {
 		return n
 	}
 	return 0
@@ -239,14 +239,14 @@ func (d *Deck) Remaining() int {
 
 // All returns a copy of all cards in the deck, without advancing.
 func (d *Deck) All() []Card {
-	v := make([]Card, d.l)
-	copy(v, d.v)
+	v := make([]Card, d.L)
+	copy(v, d.V)
 	return v
 }
 
 // Reset resets the deck.
 func (d *Deck) Reset() {
-	d.i = 0
+	d.I = 0
 }
 
 // Draw draws count cards from the top (front) of the deck.
@@ -255,8 +255,8 @@ func (d *Deck) Draw(count int) []Card {
 		return nil
 	}
 	var cards []Card
-	for l := min(d.i+count, d.l); d.i < l; d.i++ {
-		cards = append(cards, d.v[d.i])
+	for l := min(d.I+count, d.L); d.I < l; d.I++ {
+		cards = append(cards, d.V[d.I])
 	}
 	return cards
 }
@@ -264,8 +264,8 @@ func (d *Deck) Draw(count int) []Card {
 // Shuffle shuffles the deck's cards using the shuffler.
 func (d *Deck) Shuffle(shuffler Shuffler, shuffles int) {
 	for range shuffles {
-		shuffler.Shuffle(len(d.v), func(i, j int) {
-			d.v[i], d.v[j] = d.v[j], d.v[i]
+		shuffler.Shuffle(len(d.V), func(i, j int) {
+			d.V[i], d.V[j] = d.V[j], d.V[i]
 		})
 	}
 }
@@ -276,17 +276,18 @@ func (d *Deck) Shuffle(shuffler Shuffler, shuffles int) {
 //
 // [package example]: https://pkg.go.dev/github.com/cardrank/cardrank#example-package
 type Dealer struct {
-	TypeDesc
-	Deck    *Deck
-	Count   int
-	Active  map[int]bool
-	Runs    []*Run
-	Results []*Result
-	runs    int
-	st      int
-	s       int
-	r       int
-	e       int
+	TypeDesc `json:"type"`
+	Deck     *Deck        `json:"deck"`
+	Count    int          `json:"count"`
+	Active   map[int]bool `json:"active"`
+	Runs     []*Run       `json:"runs"`
+	Results  []*Result    `json:"results"`
+
+	RunCount int `json:"runCount"`
+	ST       int `json:"st"`
+	S        int `json:"s"`
+	R        int `json:"r"`
+	E        int `json:"e"`
 }
 
 // NewDealer creates a new dealer for a provided deck and pocket count.
@@ -311,11 +312,11 @@ func (d *Dealer) init() {
 	d.Active = make(map[int]bool)
 	d.Runs = []*Run{NewRun(d.Count)}
 	d.Results = nil
-	d.runs = 1
-	d.st = -1
-	d.s = -1
-	d.r = -1
-	d.e = -1
+	d.RunCount = 1
+	d.ST = -1
+	d.S = -1
+	d.R = -1
+	d.E = -1
 	for i := range d.Count {
 		d.Active[i] = true
 	}
@@ -326,9 +327,9 @@ func (d *Dealer) Format(f fmt.State, verb rune) {
 	var buf []byte
 	switch verb {
 	case 'n': // name
-		buf = []byte(d.Streets[d.s].Name)
+		buf = []byte(d.Streets[d.S].Name)
 	case 's':
-		buf = []byte(d.Streets[d.s].Desc())
+		buf = []byte(d.Streets[d.S].Desc())
 	default:
 		buf = []byte(fmt.Sprintf("%%!%c(ERROR=unknown verb, dealer)", verb))
 	}
@@ -349,7 +350,7 @@ func (d *Dealer) Inactive() []int {
 // Deactivate deactivates positions, which will not be dealt further cards and
 // will not be included during eval.
 func (d *Dealer) Deactivate(positions ...int) bool {
-	if d.r != -1 && d.r != 0 {
+	if d.R != -1 && d.R != 0 {
 		return false
 	}
 	for _, position := range positions {
@@ -360,24 +361,24 @@ func (d *Dealer) Deactivate(positions ...int) bool {
 
 // Id returns the current street id.
 func (d *Dealer) Id() byte {
-	if 0 <= d.s && d.s < len(d.Streets) {
-		return d.Streets[d.s].Id
+	if 0 <= d.S && d.S < len(d.Streets) {
+		return d.Streets[d.S].Id
 	}
 	return 0
 }
 
 // Name returns the current street name.
 func (d *Dealer) Name() string {
-	if 0 <= d.s && d.s < len(d.Streets) {
-		return d.Streets[d.s].Name
+	if 0 <= d.S && d.S < len(d.Streets) {
+		return d.Streets[d.S].Name
 	}
 	return ""
 }
 
 // NextId returns the next street id.
 func (d *Dealer) NextId() byte {
-	if -1 <= d.s && d.s < len(d.Streets)-1 {
-		return d.Streets[d.s+1].Id
+	if -1 <= d.S && d.S < len(d.Streets)-1 {
+		return d.Streets[d.S+1].Id
 	}
 	return 0
 }
@@ -385,42 +386,42 @@ func (d *Dealer) NextId() byte {
 // HasNext returns true when there is one or more remaining streets.
 func (d *Dealer) HasNext() bool {
 	n := len(d.Streets)
-	return n != 0 && d.s < n-1
+	return n != 0 && d.S < n-1
 }
 
 // HasPocket returns true when one or more pocket cards are dealt for the
 // current street.
 func (d *Dealer) HasPocket() bool {
-	return 0 <= d.s && d.s < len(d.Streets) && 0 < d.Streets[d.s].Pocket
+	return 0 <= d.S && d.S < len(d.Streets) && 0 < d.Streets[d.S].Pocket
 }
 
 // HasBoard returns true when one or more board cards are dealt for the
 // current street.
 func (d *Dealer) HasBoard() bool {
-	return 0 <= d.s && d.s < len(d.Streets) && 0 < d.Streets[d.s].Board
+	return 0 <= d.S && d.S < len(d.Streets) && 0 < d.Streets[d.S].Board
 }
 
 // HasActive returns true when there is more than 1 active positions.
 func (d *Dealer) HasActive() bool {
-	return 0 <= d.s && (d.Type.Max() == 1 || 1 < len(d.Active))
+	return 0 <= d.S && (d.Type.Max() == 1 || 1 < len(d.Active))
 }
 
 // HasCalc returns true when odds are available for calculation.
 func (d *Dealer) HasCalc() bool {
-	if d.Count != 0 && 0 <= d.r && d.r < d.runs && d.Type.Cactus() {
+	if d.Count != 0 && 0 <= d.R && d.R < d.RunCount && d.Type.Cactus() {
 		p, b := d.Type.Pocket(), d.Type.Board()
-		if p != 2 && d.s == 0 {
+		if p != 2 && d.S == 0 {
 			return false
 		}
-		return b != 0 && len(d.Runs[d.r].Pockets[0]) >= p
+		return b != 0 && len(d.Runs[d.R].Pockets[0]) >= p
 	}
 	return false
 }
 
 // Pocket returns the number of pocket cards to be dealt on the current street.
 func (d *Dealer) Pocket() int {
-	if 0 <= d.s && d.s < len(d.Streets) {
-		return d.Streets[d.s].Pocket
+	if 0 <= d.S && d.S < len(d.Streets) {
+		return d.Streets[d.S].Pocket
 	}
 	return 0
 }
@@ -428,8 +429,8 @@ func (d *Dealer) Pocket() int {
 // PocketUp returns the number of pocket cards to be turned up on the current
 // street.
 func (d *Dealer) PocketUp() int {
-	if 0 <= d.s && d.s < len(d.Streets) {
-		return d.Streets[d.s].PocketUp
+	if 0 <= d.S && d.S < len(d.Streets) {
+		return d.Streets[d.S].PocketUp
 	}
 	return 0
 }
@@ -437,8 +438,8 @@ func (d *Dealer) PocketUp() int {
 // PocketDiscard returns the number of cards to be discarded prior to dealing
 // pockets on the current street.
 func (d *Dealer) PocketDiscard() int {
-	if 0 <= d.s && d.s < len(d.Streets) {
-		return d.Streets[d.s].PocketDiscard
+	if 0 <= d.S && d.S < len(d.Streets) {
+		return d.Streets[d.S].PocketDiscard
 	}
 	return 0
 }
@@ -446,16 +447,16 @@ func (d *Dealer) PocketDiscard() int {
 // PocketDraw returns the number of pocket cards that can be drawn on the
 // current street.
 func (d *Dealer) PocketDraw() int {
-	if 0 <= d.s && d.s < len(d.Streets) {
-		return d.Streets[d.s].PocketDraw
+	if 0 <= d.S && d.S < len(d.Streets) {
+		return d.Streets[d.S].PocketDraw
 	}
 	return 0
 }
 
 // Board returns the number of board cards to be dealt on the current street.
 func (d *Dealer) Board() int {
-	if 0 <= d.s && d.s < len(d.Streets) {
-		return d.Streets[d.s].Board
+	if 0 <= d.S && d.S < len(d.Streets) {
+		return d.Streets[d.S].Board
 	}
 	return 0
 }
@@ -463,29 +464,29 @@ func (d *Dealer) Board() int {
 // BoardDiscard returns the number of board cards to be discarded prior to
 // dealing a board on the current street.
 func (d *Dealer) BoardDiscard() int {
-	if 0 <= d.s && d.s < len(d.Streets) {
-		return d.Streets[d.s].BoardDiscard
+	if 0 <= d.S && d.S < len(d.Streets) {
+		return d.Streets[d.S].BoardDiscard
 	}
 	return 0
 }
 
 // Street returns the current street.
 func (d *Dealer) Street() int {
-	return d.s
+	return d.S
 }
 
 // Discarded returns the cards discarded on the current street and run.
 func (d *Dealer) Discarded() []Card {
-	if 0 <= d.s && d.s <= len(d.Streets) && 0 <= d.r && d.r < d.runs {
-		return d.Runs[d.r].Discard
+	if 0 <= d.S && d.S <= len(d.Streets) && 0 <= d.R && d.R < d.RunCount {
+		return d.Runs[d.R].Discard
 	}
 	return nil
 }
 
 // Run returns the current run.
 func (d *Dealer) Run() (int, *Run) {
-	if 0 <= d.r && d.r < d.runs {
-		return d.r, d.Runs[d.r]
+	if 0 <= d.R && d.R < d.RunCount {
+		return d.R, d.Runs[d.R]
 	}
 	return -1, nil
 }
@@ -493,12 +494,12 @@ func (d *Dealer) Run() (int, *Run) {
 // Calc calculates the run odds, including whether or not to include folded
 // positions.
 func (d *Dealer) Calc(ctx context.Context, folded bool, opts ...CalcOption) (*Odds, *Odds, bool) {
-	if 0 <= d.r && d.r < d.runs {
+	if 0 <= d.R && d.R < d.RunCount {
 		return NewOddsCalc(
 			d.Type,
 			append(
 				opts,
-				WithRuns(d.Runs[:d.r+1]),
+				WithRuns(d.Runs[:d.R+1]),
 				WithActive(d.Active, folded),
 			)...,
 		).Calc(ctx)
@@ -508,8 +509,8 @@ func (d *Dealer) Calc(ctx context.Context, folded bool, opts ...CalcOption) (*Od
 
 // Result returns the current result.
 func (d *Dealer) Result() (int, *Result) {
-	if 0 <= d.e && d.e < d.runs {
-		return d.e, d.Results[d.e]
+	if 0 <= d.E && d.E < d.RunCount {
+		return d.E, d.Results[d.E]
 	}
 	return -1, nil
 }
@@ -524,10 +525,10 @@ func (d *Dealer) Reset() {
 func (d *Dealer) ChangeRuns(runs int) bool {
 	switch {
 	// check state
-	case d.r != 0,
-		d.runs != 1,
+	case d.R != 0,
+		d.RunCount != 1,
 		len(d.Runs) != 1,
-		len(d.Streets) <= d.s,
+		len(d.Streets) <= d.S,
 		!d.HasActive():
 		return false
 	}
@@ -535,7 +536,7 @@ func (d *Dealer) ChangeRuns(runs int) bool {
 	for run := 1; run < runs; run++ {
 		d.Runs[run] = d.Runs[0].Dupe()
 	}
-	d.st, d.runs = d.s, runs
+	d.ST, d.RunCount = d.S, runs
 	return true
 }
 
@@ -545,19 +546,19 @@ func (d *Dealer) ChangeRuns(runs int) bool {
 // and when there are additional streets or runs.
 func (d *Dealer) Next() bool {
 	switch {
-	case d.s == -1 && d.r == -1:
-		d.s, d.r = 0, 0
+	case d.S == -1 && d.R == -1:
+		d.S, d.R = 0, 0
 	default:
-		d.s++
+		d.S++
 	}
 	switch n := len(d.Streets); {
-	case n <= d.s && d.r == d.runs-1, !d.HasActive():
+	case n <= d.S && d.R == d.RunCount-1, !d.HasActive():
 		return false
-	case len(d.Streets) <= d.s && d.r < d.runs:
-		d.s, d.r = d.st+1, d.r+1
+	case len(d.Streets) <= d.S && d.R < d.RunCount:
+		d.S, d.R = d.ST+1, d.R+1
 	}
-	d.Deal(d.s, d.Runs[d.r])
-	return d.s < len(d.Streets) || d.r < d.runs-1
+	d.Deal(d.S, d.Runs[d.R])
+	return d.S < len(d.Streets) || d.R < d.RunCount-1
 }
 
 // NextResult iterates the next result.
@@ -565,7 +566,7 @@ func (d *Dealer) NextResult() bool {
 	if d.Results == nil {
 		switch n := len(d.Active); {
 		case d.Results != nil:
-		case n == 1 && d.runs == 1 && d.Max != 1:
+		case n == 1 && d.RunCount == 1 && d.Max != 1:
 			// only one active position
 			var i int
 			for ; i < d.Count && !d.Active[i]; i++ {
@@ -580,17 +581,17 @@ func (d *Dealer) NextResult() bool {
 			}
 			d.Results = []*Result{res}
 		case n > 1 || d.Max == 1:
-			d.Results = make([]*Result, d.runs)
-			for i := range d.runs {
+			d.Results = make([]*Result, d.RunCount)
+			for i := range d.RunCount {
 				d.Results[i] = NewResult(d.Type, d.Runs[i], d.Active, false)
 			}
 		}
 	}
-	if d.runs <= d.e {
+	if d.RunCount <= d.E {
 		return false
 	}
-	d.e++
-	return d.e < d.runs
+	d.E++
+	return d.E < d.RunCount
 }
 
 // Deal deals pocket and board cards for the street and run, discarding cards

@@ -402,7 +402,7 @@ func (typ Type) Streets() []StreetDesc {
 // Pocket returns the type's total dealt pocket cards.
 func (typ Type) Pocket() int {
 	if desc, ok := descs[typ]; ok {
-		return desc.pocket
+		return desc.Pocket
 	}
 	return 0
 }
@@ -410,7 +410,7 @@ func (typ Type) Pocket() int {
 // PocketDiscard returns the type's total pocket discard.
 func (typ Type) PocketDiscard() int {
 	if desc, ok := descs[typ]; ok {
-		return desc.pocketDiscard
+		return desc.PocketDiscard
 	}
 	return 0
 }
@@ -418,7 +418,7 @@ func (typ Type) PocketDiscard() int {
 // Board returns the type's total dealt board cards.
 func (typ Type) Board() int {
 	if desc, ok := descs[typ]; ok {
-		return desc.board
+		return desc.Board
 	}
 	return 0
 }
@@ -426,7 +426,7 @@ func (typ Type) Board() int {
 // BoardDiscard returns the type's total board discard.
 func (typ Type) BoardDiscard() int {
 	if desc, ok := descs[typ]; ok {
-		return desc.boardDiscard
+		return desc.BoardDiscard
 	}
 	return 0
 }
@@ -434,7 +434,7 @@ func (typ Type) BoardDiscard() int {
 // Draw returns true when one or more streets allows draws.
 func (typ Type) Draw() bool {
 	if desc, ok := descs[typ]; ok {
-		return desc.draw
+		return desc.Draw
 	}
 	return false
 }
@@ -510,41 +510,41 @@ func (typ Type) ExpValue(ctx context.Context, pocket []Card, opts ...CalcOption)
 // TypeDesc is a type description.
 type TypeDesc struct {
 	// Num is the registered number.
-	Num int
+	Num int `json:"registeredNumber"`
 	// Type is the type.
-	Type Type
+	Type Type `json:"type"`
 	// Name is the type name.
-	Name string
+	Name string `json:"name"`
 	// Max is the max number of players.
-	Max int
+	Max int `json:"max"`
 	// Low is true when the enabling the Hi/Lo variant, with an 8-or-better
 	// evaluated Lo.
-	Low bool
+	Low bool `json:"low"`
 	// Double is true when there are double community boards where the first
 	// and second board is evaluated as the Hi and Lo, respectively.
-	Double bool
+	Double bool `json:"double"`
 	// Show is true when folded cards are shown.
-	Show bool
+	Show bool `json:"show"`
 	// Once is true when a draw can only occur once.
-	Once bool
+	Once bool `json:"once"`
 	// Blinds are the blind names.
-	Blinds []string
+	Blinds []string `json:"blinds"`
 	// Streets are the betting streets.
-	Streets []StreetDesc
+	Streets []StreetDesc `json:"streets"`
 	// Deck is the deck type.
-	Deck DeckType
+	Deck DeckType `json:"deck"`
 	// Eval is the eval type.
-	Eval EvalType
+	Eval EvalType `json:"eval"`
 	// HiDesc is the Hi description type.
-	HiDesc DescType
+	HiDesc DescType `json:"hiDesc"`
 	// LoDesc is the Lo description type.
-	LoDesc DescType
+	LoDesc DescType `json:"loDesc"`
 
-	pocket        int
-	pocketDiscard int
-	board         int
-	boardDiscard  int
-	draw          bool
+	Pocket        int  `json:"pocket"`
+	PocketDiscard int  `json:"pocketDiscard"`
+	Board         int  `json:"board"`
+	BoardDiscard  int  `json:"boardDiscard"`
+	Draw          bool `json:"draw"`
 }
 
 // NewType creates a new type description. Created type descriptions must be
@@ -568,11 +568,11 @@ func NewType(id string, typ Type, name string, opts ...TypeOption) (*TypeDesc, e
 		o(desc)
 	}
 	for _, street := range desc.Streets {
-		desc.pocket += street.Pocket
-		desc.pocketDiscard += street.PocketDiscard
-		desc.board += street.Board
-		desc.boardDiscard += street.BoardDiscard
-		desc.draw = desc.draw || street.PocketDraw != 0
+		desc.Pocket += street.Pocket
+		desc.PocketDiscard += street.PocketDiscard
+		desc.Board += street.Board
+		desc.BoardDiscard += street.BoardDiscard
+		desc.Draw = desc.Draw || street.PocketDraw != 0
 	}
 	return desc, nil
 }

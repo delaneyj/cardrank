@@ -68,8 +68,8 @@ func RegisterType(desc TypeDesc) error {
 	}
 	desc.Num = len(descs)
 	descs[desc.Type] = desc
-	calcs[desc.Type] = desc.Eval.New(desc.board, false, desc.Low)
-	evals[desc.Type] = desc.Eval.New(desc.board, true, desc.Low)
+	calcs[desc.Type] = desc.Eval.New(desc.Board, false, desc.Low)
+	evals[desc.Type] = desc.Eval.New(desc.Board, true, desc.Low)
 	return nil
 }
 
